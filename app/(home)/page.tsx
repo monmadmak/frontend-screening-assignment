@@ -3,28 +3,70 @@
 import { useCallback, useState, useEffect } from "react";
 import Image from "next/image";
 import styles from "./Home.module.css";
-import { FlightLogService } from "../(flightlog)/fightlog.service";
+import {
+  addLogToAverageTracker,
+  buildAverageTracker,
+  createEmptyAverageTracker,
+  getAverageTravelTimes,
+} from "../(flightlog)/flightlog.average";
+import { FlightLogService } from "../(flightlog)/flightlog.service";
+import type {
+  AverageTravelTime,
+  FlightLog,
+} from "../(flightlog)/flightlog.types";
+import type { AverageTrackerState } from "../(flightlog)/flightlog.average";
 import LogCard from "../(flightlog)/LogCard";
 import LogForm from "../(flightlog)/LogForm";
 // import BoardingPassCard from "../(boardingpass)/BoardingPassCard";
 
 const flightLogService = new FlightLogService();
 
+function formatDuration(seconds: number) {
+  const roundedSeconds = Math.round(seconds);
+
+  if (roundedSeconds < 60) {
+    return `${roundedSeconds} sec`;
+  }
+
+  if (roundedSeconds < 60 * 60) {
+    return `${Math.round(roundedSeconds / 60)} min`;
+  }
+
+  return `${Math.round(roundedSeconds / 3600)} hour`;
+}
+
 export default function Home() {
-  const [logs, setLogs] = useState([]);
+  const [logs, setLogs] = useState<FlightLog[]>([]);
+  const [averageTracker, setAverageTracker] = useState<AverageTrackerState>(
+    createEmptyAverageTracker()
+  );
+  const [averageTravelTimes, setAverageTravelTimes] = useState<
+    AverageTravelTime[]
+  >([]);
 
   const handleAddLog = useCallback(
-    (log) => {
-      logs.push(log);
-      setLogs(logs);
+    (log: FlightLog) => {
+      setLogs((prevLogs) => [...prevLogs, log]);
+      setAverageTracker((currentTracker) =>
+        addLogToAverageTracker(currentTracker, log)
+      );
     },
-    [logs]
+    []
   );
+
+  const handlePrintAvgTime = useCallback(() => {
+    setAverageTravelTimes(getAverageTravelTimes(averageTracker.routeStats));
+  }, [averageTracker.routeStats]);
 
   useEffect(() => {
     const fetch = async () => {
       const data = await flightLogService.getLogs();
+      const tracker = data.length
+        ? buildAverageTracker(data)
+        : createEmptyAverageTracker();
+
       setLogs(data);
+      setAverageTracker(tracker);
     };
 
     fetch();
@@ -43,12 +85,26 @@ export default function Home() {
         <div className={styles.card} style={{ margin: 16, width: "100%" }}>
           <h2>Flight Logs</h2>
           <LogCard style={{ width: "100%" }} data={logs}></LogCard>
+          <button onClick={handlePrintAvgTime} style={{ marginTop: 16 }}>
+            Print avg time
+          </button>
+
+          <div style={{ marginTop: 16 }}>
+            {averageTravelTimes.length === 0 ? (
+              <p>No average travel time calculated yet.</p>
+            ) : (
+              averageTravelTimes.map(({ route, averageTime }) => (
+                <p key={route}>
+                  {route} : {formatDuration(averageTime)}
+                </p>
+              ))
+            )}
+          </div>
         </div>
         <div className={styles.card} style={{ margin: 16, width: "100%" }}>
           <h2>Departure Logging</h2>
           <LogForm
             style={{ width: "100%" }}
-            data={logs}
             type={"departure"}
             onSubmit={handleAddLog}
           ></LogForm>
@@ -57,7 +113,6 @@ export default function Home() {
           <h2>Arrival Logging</h2>
           <LogForm
             style={{ width: "100%" }}
-            data={logs}
             type={"arrival"}
             onSubmit={handleAddLog}
           ></LogForm>

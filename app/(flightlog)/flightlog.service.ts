@@ -1,5 +1,7 @@
+import type { FlightLog } from "./flightlog.types";
+
 export class FlightLogService {
-  initialData = [
+  initialData: FlightLog[] = [
     {
       passengerName: "cherprang",
       airport: "bangkok",
@@ -20,9 +22,9 @@ export class FlightLogService {
     },
   ];
 
-  getLogs() {
-    return new Promise(function (resolve) {
-      setTimeout(function () {
+  getLogs(): Promise<FlightLog[]> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
         resolve(this.initialData || []);
       }, 2000);
     });

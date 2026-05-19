@@ -1,4 +1,10 @@
-function LogItem(props) {
+import type { FlightLog } from "./flightlog.types";
+
+type LogItemProps = {
+  item: FlightLog;
+};
+
+function LogItem(props: LogItemProps) {
   const { item } = props;
   return (
     <div style={{ display: "flex" }}>

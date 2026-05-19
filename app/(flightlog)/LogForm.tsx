@@ -1,4 +1,6 @@
 import { useState, useCallback } from "react";
+import type { CSSProperties, ChangeEvent } from "react";
+import type { FlightLog, FlightLogType } from "./flightlog.types";
 
 const emptyForm = {
   passengerName: "",
@@ -6,8 +8,14 @@ const emptyForm = {
   timestamp: "",
 };
 
-function LogForm(props) {
-  const { type, onSubmit } = props;
+type LogFormProps = {
+  style?: CSSProperties;
+  type: FlightLogType;
+  onSubmit: (log: FlightLog) => void;
+};
+
+function LogForm(props: LogFormProps) {
+  const { style, type, onSubmit } = props;
 
   const [formData, setFormData] = useState(emptyForm);
 
@@ -16,7 +24,7 @@ function LogForm(props) {
     setFormData(emptyForm);
   }, [formData, type, onSubmit]);
 
-  const handleChange = useCallback(({ target }) => {
+  const handleChange = useCallback(({ target }: ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
       ...prev,
       [target.id]: target.value,
@@ -24,17 +32,17 @@ function LogForm(props) {
   }, []);
 
   return (
-    <div style={{ display: "flex", columnGap: 8 }}>
+    <div style={{ display: "flex", columnGap: 8, ...style }}>
       <div
         style={{ flex: 1, display: "flex", flexDirection: "column", rowGap: 4 }}
       >
-        <label htmlFor="pname" style={{ fontWeight: "bold" }}>
+        <label htmlFor="passengerName" style={{ fontWeight: "bold" }}>
           Passenger Name:
         </label>
         <input
           type="text"
-          id="pname"
-          name="pname"
+          id="passengerName"
+          name="passengerName"
           value={formData.passengerName}
           onChange={handleChange}
         />
